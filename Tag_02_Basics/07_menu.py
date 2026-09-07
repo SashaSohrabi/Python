@@ -1,9 +1,9 @@
-import os
+import subprocess
 
 while True:
     befehl = input("Drücken Sie einen Befehl... ")
     if befehl == "clear":
-        os.system("cls")
+        subprocess.run("cls", shell=True)
     elif befehl == "exit":
         break
     else:
