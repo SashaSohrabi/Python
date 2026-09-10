@@ -1,4 +1,4 @@
-hostnamen = []
+hostnamen: list[str] = []
 hostnamen.append("Router-01")
 hostnamen.append("Switch-Core")
 hostnamen.append("Firewall-Extern")

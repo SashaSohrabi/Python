@@ -1,4 +1,4 @@
-def berechne_auslastung(wert1, wert2):
+def berechne_auslastung(wert1: float, wert2: float) -> float:
     summe = wert1 + wert2
     return round(summe, 1)
 

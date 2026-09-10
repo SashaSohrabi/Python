@@ -5,7 +5,18 @@ Datum: 09.09.2026
 Zweck: Serverdaten verwalten, sicher auslesen und auf kritische CPU-Last prüfen.
 """
 
-INFRASTRUKTUR = {
+from typing import NotRequired, TypedDict
+
+
+class ServerData(TypedDict):
+    ip: str
+    rolle: str
+    cpu_load: int
+    status: str
+    temperatur: NotRequired[int]
+
+
+INFRASTRUKTUR: dict[str, ServerData] = {
     "web-01": {
         "ip": "192.168.1.10",
         "rolle": "Frontend",
