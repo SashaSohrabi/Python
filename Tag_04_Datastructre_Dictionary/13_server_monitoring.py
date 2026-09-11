@@ -5,7 +5,7 @@ Datum: 09.09.2026
 Zweck: Serverdaten verwalten, sicher auslesen und auf kritische CPU-Last prüfen.
 """
 
-from typing import NotRequired, TypedDict
+from typing import TypedDict
 
 
 class ServerData(TypedDict):
@@ -13,7 +13,6 @@ class ServerData(TypedDict):
     rolle: str
     cpu_load: int
     status: str
-    temperatur: NotRequired[int]
 
 
 INFRASTRUKTUR: dict[str, ServerData] = {
