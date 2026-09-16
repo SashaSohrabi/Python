@@ -1,0 +1,6 @@
+=== SYSTEM-AUDIT-BERICHT ===
+Quelle: system_logs.txt
+Warnungen insgesamt: 33
+Kritische Fehler in diesem Lauf: 36
+Kritische Fehler wurden nach kritische_alarme.txt ausgelagert.
+INFO-Einträge wurden ignoriert.
