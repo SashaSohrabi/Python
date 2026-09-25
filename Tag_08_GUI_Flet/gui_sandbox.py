@@ -1,11 +1,11 @@
-from collections.abc import Callable
-
 import flet as ft
+from flet_types import Setter
 
 
 @ft.component
 def counter() -> ft.Row:
-    set_count: Callable[[int | Callable[[int], int]], None]
+    count: int
+    set_count: Setter[int]
     # Flet 1.0.0 leaves the generic Updater type unspecialized in use_state.
     count, set_count = ft.use_state(0)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
