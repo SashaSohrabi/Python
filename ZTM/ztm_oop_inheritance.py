@@ -40,5 +40,7 @@ def do_attach(obj: Wizard | Archer) -> None:
     obj.attack()
 
 
-for itm in [wizard1, archer1, hb1]:
+characters: list[Wizard | Archer] = [wizard1, archer1, hb1]
+
+for itm in characters:
     do_attach(itm)

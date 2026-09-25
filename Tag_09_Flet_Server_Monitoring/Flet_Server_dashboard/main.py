@@ -1,5 +1,11 @@
-import flet as ft
+"""
+Skript: Server Dashboard
+Autor: Sasha Sohrabi
+Datum: 22.09.2026
+Zweck: Dashboard mit drei Karten und der Warn-Statuszeil
+"""
 
+import flet as ft
 from app.views.dashboard import server_dashboard
 
 

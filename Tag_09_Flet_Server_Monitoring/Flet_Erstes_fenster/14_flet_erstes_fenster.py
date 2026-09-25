@@ -3,14 +3,24 @@
 # Datum: 22.09.2026
 # Zweck: Ein erstes Flet-Fenster mit Hostname-Eingabe und farbiger Rückmeldung.
 
+from collections.abc import Callable
+from typing import cast
+
 import flet as ft
+from flet import use_state  # pyright: ignore[reportUnknownVariableType]
+
+# Flet 1.0 typisiert den Updater nicht vollständig; der Setter darf auch
+# eine Funktion annehmen, die aus dem bisherigen Wert den nächsten berechnet.
+type State[T] = tuple[T, Callable[[T | Callable[[T], T]], None]]
 
 
 @ft.component
 def server_toolbox() -> ft.Column:
-    hostname, set_hostname = ft.use_state("")
-    initial_output: tuple[str, ft.Colors] = ("", ft.Colors.BLACK)
-    output, set_output = ft.use_state(initial_output)
+    hostname, set_hostname = cast(State[str], use_state(""))
+    # str und Colors erlauben alle Texte/Farben, nicht nur die Startwerte.
+    output, set_output = cast(
+        State[tuple[str, ft.Colors]], use_state(("", ft.Colors.BLACK))
+    )
 
     def hostname_aendern(e: ft.Event[ft.TextField]) -> None:
         set_hostname(e.control.value or "")

@@ -2,7 +2,6 @@ from copy import deepcopy
 
 from app.models.server import DatenbankServer
 
-
 _INFRASTRUKTUR: dict[str, DatenbankServer] = {
     "web-01": {
         "ip": "192.168.1.10",

@@ -1,14 +1,21 @@
-import flet as ft
+from collections.abc import Callable
+from typing import cast
 
+import flet as ft
 from app.components.server_card import server_karte
 from app.data.infrastructure import get_infrastruktur
+from app.models.server import DatenbankServer
 from app.services.monitoring import monitoring_status
+from flet import use_state  # pyright: ignore[reportUnknownVariableType]
+
+# Flet 1.0 lässt den Updater-Typ offen; hier werden Wert und Setter präzisiert.
+type State[T] = tuple[T, Callable[[T | Callable[[T], T]], None]]
 
 
 @ft.component
 def server_dashboard() -> ft.Column:
-    infrastruktur, set_infrastruktur = ft.use_state(
-        get_infrastruktur()
+    infrastruktur, set_infrastruktur = cast(
+        State[dict[str, DatenbankServer]], use_state(get_infrastruktur())
     )
 
     def status_neu_laden(_e: ft.Event[ft.Button]) -> None:

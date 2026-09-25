@@ -1,15 +1,19 @@
+from collections.abc import Callable
+
 import flet as ft
 
 
 @ft.component
 def counter() -> ft.Row:
-    count, set_count = ft.use_state(0)
+    set_count: Callable[[int | Callable[[int], int]], None]
+    # Flet 1.0.0 leaves the generic Updater type unspecialized in use_state.
+    count, set_count = ft.use_state(0)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
     def minus_click(_e: ft.Event[ft.IconButton]) -> None:
-        set_count(count - 1)
+        set_count(lambda previous: previous - 1)
 
     def plus_click(_e: ft.Event[ft.IconButton]) -> None:
-        set_count(count + 1)
+        set_count(lambda previous: previous + 1)
 
     def input_change(_e: ft.Event[ft.TextField]) -> None:
         try:
@@ -45,4 +49,5 @@ def main(page: ft.Page) -> None:
     page.render(counter)
 
 
-ft.run(main)
+if __name__ == "__main__":
+    ft.run(main)

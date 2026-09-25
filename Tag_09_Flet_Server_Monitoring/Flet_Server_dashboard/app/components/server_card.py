@@ -1,5 +1,4 @@
 import flet as ft
-
 from app.models.server import DatenbankServer
 
 
