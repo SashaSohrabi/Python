@@ -1,25 +1,22 @@
-# Skriptname: show_card.py
+# Skriptname: server_card.py
 # Autor: Sasha Sohrabi
 # Datum: 25.09.2026
-# Zweck: Ein Auftritt als visuelle Karte mit Status und Publikum anzeigen.
+# Zweck: Alle Serverklassen mit derselben Kartenfunktion darstellen.
 
 import flet as ft
 from app.constants import theme
-from app.models.show import Show
+from app.models.server import Server
 
 
-def show_karte(auftritt: Show) -> ft.Container:
-    if auftritt.status == "pause":
+def server_karte(server: Server) -> ft.Container:
+    if server.status == "offline":
         farbe = theme.FEHLER
-        meldung = "Pause – noch keine Live-Phase."
-        icon = ft.Icons.PAUSE_CIRCLE_OUTLINE
-    elif auftritt.ist_highlight():
+        icon = ft.Icons.ERROR_OUTLINE
+    elif server.ist_kritisch():
         farbe = theme.WARNUNG
-        meldung = f"Highlight – Publikum {auftritt.publikum}% begeistert."
-        icon = ft.Icons.STAR_OUTLINE
+        icon = ft.Icons.WARNING_AMBER_OUTLINED
     else:
         farbe = theme.ERFOLG
-        meldung = f"Stabil – Publikum {auftritt.publikum}% zufrieden."
         icon = ft.Icons.CHECK_CIRCLE_OUTLINE
 
     return ft.Container(
@@ -35,20 +32,15 @@ def show_karte(auftritt: Show) -> ft.Container:
                     controls=[
                         ft.Icon(icon, color=farbe, size=24),
                         ft.Text(
-                            auftritt.name,
-                            size=18,
+                            str(server),
+                            size=17,
                             weight=ft.FontWeight.BOLD,
                             color=theme.TEXTFARBE,
                             expand=True,
                         ),
                     ],
                 ),
-                ft.Text(
-                    f"{auftritt.kuenstler} · {auftritt.genre} · {auftritt.dauer_min} min",
-                    color=theme.NEBENTEXT,
-                    size=13,
-                ),
-                ft.Text(meldung, color=farbe, size=13),
+                ft.Text(server.diagnose(), color=farbe, size=14),
             ],
         ),
     )

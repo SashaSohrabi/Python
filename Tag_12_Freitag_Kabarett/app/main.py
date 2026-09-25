@@ -1,11 +1,11 @@
-# Skriptname: 12_freitag_kabarett.py
+# Skriptname: main.py
 # Autor: Sasha Sohrabi
 # Datum: 25.09.2026
-# Zweck: Freitag-Kabarett als OOP-gestützte Flet-Anwendung starten.
+# Zweck: Das Server-Kabarett-Fenster konfigurieren und mit Objekten füllen.
 
 import flet as ft
 from app.constants import settings, theme
-from app.data.lineup import auftritte_erzeugen
+from app.data.infrastructure import serverliste_erzeugen
 from app.views.dashboard import kabarett_dashboard
 
 
@@ -27,9 +27,5 @@ def main(page: ft.Page) -> None:
         toolbar_height=settings.APPBAR_HOEHE,
     )
 
-    auffuehrungen = auftritte_erzeugen()
-    page.add(kabarett_dashboard(auffuehrungen))
-
-
-if __name__ == "__main__":
-    ft.run(main)
+    truppe = serverliste_erzeugen()
+    page.add(kabarett_dashboard(truppe))

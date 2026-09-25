@@ -1,73 +1,71 @@
 # Skriptname: dashboard.py
 # Autor: Sasha Sohrabi
 # Datum: 25.09.2026
-# Zweck: Auftrittskarten zusammenfassen und Highlights bewerten.
+# Zweck: Fünf polymorphe Serverkarten und ein Diagnose-Orakel zusammenstellen.
+
+import random
 
 import flet as ft
-from app.components.show_card import show_karte
+from app.components.server_card import server_karte
 from app.constants import theme
-from app.constants.settings import KARTENABSTAND
-from app.models.show import Show
+from app.constants.settings import CPU_WARNGRENZE, KARTENABSTAND
+from app.data.diagnoses import DIAGNOSEN
+from app.models.server import Server
 
 
-def kabarett_dashboard(auffuehrungen: list[Show]) -> ft.Column:
-    karten = ft.Column(
-        controls=[show_karte(auftritt) for auftritt in auffuehrungen],
-        spacing=KARTENABSTAND,
-        horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-    )
-    ergebnis = ft.Text(
-        "Noch keine Bewertung durchgeführt.", color=theme.NEBENTEXT, size=14
+def kabarett_dashboard(truppe: list[Server]) -> ft.Column:
+    orakel_text = ft.Text(
+        "Das Orakel wartet auf seinen ersten Kaffee. Klicke auf den Button.",
+        color=theme.NEBENTEXT,
+        size=14,
     )
 
-    def pruefen() -> None:
-        highlights = [auftritt for auftritt in auffuehrungen if auftritt.ist_highlight()]
-        karten.controls = [show_karte(auftritt) for auftritt in auffuehrungen]
-
-        if not auffuehrungen:
-            ergebnis.value = "Keine Auftritte im Programm vorhanden."
-            ergebnis.color = theme.FEHLER
-        elif highlights:
-            namen = ", ".join(auftritt.name for auftritt in highlights)
-            ergebnis.value = (
-                f"Highlight-Check: {len(highlights)} Auftritte mit starkem Publikum: "
-                f"{namen}."
-            )
-            ergebnis.color = theme.WARNUNG
-        else:
-            ergebnis.value = "Kein klarer Publikumshighlight gefunden."
-            ergebnis.color = theme.ERFOLG
+    def diagnose_wuerfeln() -> None:
+        orakel_text.value = random.choice(DIAGNOSEN)
+        orakel_text.color = theme.TEXTFARBE
 
     return ft.Column(
         spacing=KARTENABSTAND,
         horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
         controls=[
+            ft.Text("FÜNF SERVER. EINE BÜHNE.", color=theme.NEBENTEXT, size=12),
             ft.Text(
-                "PROGRAMM / FREITAG KABARETT",
-                color=theme.NEBENTEXT,
-                size=12,
-            ),
-            ft.Text(
-                "Live = aktiv · Pause = ausgesetzt · Highlight = Publikum stärker als 80 %",
+                f"Grün: online · Gelb: online und CPU über {CPU_WARNGRENZE} % · Rot: offline",
                 color=theme.NEBENTEXT,
                 size=13,
             ),
-            karten,
-            ft.Row(
-                wrap=True,
-                controls=[
-                    ft.Button(
-                        "Highlights prüfen",
-                        icon=ft.Icons.STAR_OUTLINE,
-                        on_click=pruefen,
-                    ),
-                ],
+            ft.Column(
+                controls=[server_karte(server) for server in truppe],
+                spacing=KARTENABSTAND,
+                horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
             ),
-            ergebnis,
-            ft.Text(
-                "Die Bewertung fokussiert auf starke Reaktionen im Publikum und hebt die besten Nummern hervor.",
-                color=theme.NEBENTEXT,
-                size=12,
+            ft.Container(
+                bgcolor=theme.KARTENFARBE,
+                border_radius=8,
+                padding=16,
+                content=ft.Column(
+                    spacing=10,
+                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+                    controls=[
+                        ft.Text(
+                            "Diagnose-Orakel",
+                            size=18,
+                            weight=ft.FontWeight.BOLD,
+                            color=theme.TEXTFARBE,
+                        ),
+                        orakel_text,
+                        ft.Row(
+                            wrap=True,
+                            controls=[
+                                ft.Button(
+                                    "Diagnose würfeln",
+                                    icon=ft.Icons.CASINO_OUTLINED,
+                                    on_click=diagnose_wuerfeln,
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
             ),
         ],
     )
