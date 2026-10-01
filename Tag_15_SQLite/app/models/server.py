@@ -5,8 +5,13 @@ from collections.abc import Mapping
 
 from ..constants.settings import CPU_WARNING_THRESHOLD
 from ..types.server_row import ServerRow
-from ..types.server_status import ServerStatusEnum, validate_status
-from .validation import get_integer_field, get_text_field, validate_cpu_load
+from ..types.server_status import ServerStatusEnum
+from .validation import (
+    get_integer_field,
+    get_text_field,
+    validate_cpu_load,
+    validate_status,
+)
 
 
 class Server:
@@ -73,7 +78,6 @@ class Server:
 
     @classmethod
     def from_row(cls, row: Mapping[str, object]) -> "Server":
-        # Convert the stored text to an enum explicitly at this boundary.
         return cls(
             get_text_field(row, "name"), get_text_field(row, "ip"),
             get_text_field(row, "role"), get_integer_field(row, "cpu"),

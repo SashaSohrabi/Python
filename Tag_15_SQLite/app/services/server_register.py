@@ -25,7 +25,7 @@ class ServerRegister:
     def __init__(self, db: Path) -> None:
         self.db = db
 
-    def insert_missing_servers(self, servers: Sequence[Server]) -> int:
+    def insert_new_servers(self, servers: Sequence[Server]) -> int:
         """Insert servers with new names, preserving existing rows; return the count."""
         conn = open_database_connection(self.db)
         inserted_count = 0
@@ -51,27 +51,33 @@ class ServerRegister:
             conn.close()
 
     def fetch_rows(
-        self, sql: str, parameters: tuple[object, ...] = (),
+        self,
+        sql: str = "SELECT * FROM server ORDER BY id",
+        parameters: Sequence[object]  = (),
     ) -> list[dict[str, object]]:
-        conn = open_database_connection(self.db)
+        """Run a SELECT query; by default, return all server rows ordered by id."""
+        connection = open_database_connection(self.db)
         try:
-            rows: list[sqlite3.Row] = conn.execute(sql, parameters).fetchall()
-            return [dict(row) for row in rows]
-        finally:
-            conn.close()
+            cursor = connection.execute(sql, parameters)
+            rows: list[sqlite3.Row] = cursor.fetchall()
 
-    def fetch_server_rows(self) -> list[dict[str, object]]:
-        return self.fetch_rows("SELECT * FROM server ORDER BY id")
+            result_rows: list[dict[str, object]] = []
+            for row in rows:
+                result_rows.append(dict(row))
+            return result_rows
+        finally:
+            connection.close()
 
     def load_servers(self) -> list[Server]:
         servers: list[Server] = []
-        for row in self.fetch_server_rows():
+        for row in self.fetch_rows():
             row.pop("id", None)
             server_class = SERVER_TYPES[get_text_field(row, "server_type")]
             servers.append(server_class.from_row(row))
         return servers
 
-    def search_by_min_cpu(self, minimum_cpu: int) -> list[str]:
+    def find_server_summaries_by_min_cpu_load(self, minimum_cpu: int) -> list[str]:
+        """Return formatted summaries for servers at or above the CPU threshold."""
         rows = self.fetch_rows(
             "SELECT name, server_type, cpu FROM server WHERE cpu >= ? "
             "ORDER BY cpu DESC, id ASC", (validate_cpu_load(minimum_cpu),),
@@ -81,7 +87,7 @@ class ServerRegister:
             f"CPU {get_integer_field(row, 'cpu')} %)" for row in rows
         ]
 
-    def compare_role_and_cpu_filters(self) -> dict[str, list[str]]:
+    def compare_and_or_filters(self) -> dict[str, list[str]]:
         """Compare AND/OR results for role Database and CPU load of at least 80%."""
         and_rows = self.fetch_rows(
             "SELECT name FROM server WHERE role = ? AND cpu >= ? ORDER BY id",
@@ -96,7 +102,7 @@ class ServerRegister:
             "OR": [get_text_field(row, "name") for row in or_rows],
         }
 
-    def set_cpu_load(self, name: str, cpu_load: int) -> int:
+    def update_server_cpu_load(self, name: str, cpu_load: int) -> int:
         """Set CPU load by name and return matched rows, including unchanged values."""
         validate_cpu_load(cpu_load)
         conn = open_database_connection(self.db)
@@ -110,7 +116,8 @@ class ServerRegister:
         finally:
             conn.close()
 
-    def count_by_server_type(self) -> dict[str, int]:
+    def count_servers_by_type(self) -> dict[str, int]:
+        """Return the number of stored servers for each class name."""
         rows = self.fetch_rows(
             "SELECT server_type, COUNT(*) AS count FROM server "
             "GROUP BY server_type ORDER BY server_type"
@@ -120,7 +127,7 @@ class ServerRegister:
             for row in rows
         }
 
-    def fetch_highest_cpu_row(self) -> dict[str, object] | None:
+    def fetch_server_with_highest_cpu_load(self) -> dict[str, object] | None:
         """Return the name and CPU load of the busiest server, or None if empty."""
         conn = open_database_connection(self.db)
         try:
