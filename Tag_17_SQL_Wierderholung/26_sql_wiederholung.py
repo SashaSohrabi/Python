@@ -2,18 +2,9 @@ import sqlite3
 from pathlib import Path
 from typing import cast
 
+from ticket_common import SAMPLE_TICKETS, TicketData, print_tickets
+
 DB: Path = Path(__file__).resolve().with_name("wiederholung.db")
-
-type TicketData = tuple[str, int, str]
-
-SAMPLE_TICKETS: list[TicketData] = [
-    ("Printer issue", 2, "offen"),
-    ("Update server", 1, "offen"),
-    ("Create user account", 3, "offen"),
-    ("Check backup", 1, "offen"),
-    ("Configure router", 2, "geschlossen"),
-    ("Install software", 3, "geschlossen"),
-]
 
 
 def get_connection() -> sqlite3.Connection:
@@ -132,15 +123,6 @@ def get_tickets_by_status(status: str, minimum_priority: int = 0) -> list[Ticket
         raise RuntimeError("Could not retrieve tickets by status.") from error
     finally:
         connection.close()
-
-
-def print_tickets(tickets: list[TicketData]) -> None:
-    print("title | priority | status")
-    if not tickets:
-        print("Keine passenden Tickets.")
-    for title, priority, status in tickets:
-        print(f"{title} | {priority} | {status}")
-
 
 def close_ticket_by_title(title: str) -> int:
     connection = get_connection()
