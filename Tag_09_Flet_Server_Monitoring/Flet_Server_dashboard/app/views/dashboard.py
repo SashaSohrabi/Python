@@ -1,11 +1,13 @@
 from typing import cast
+
 import flet as ft
 from app.components.server_card import server_karte
 from app.data.infrastructure import get_infrastruktur
 from app.models.server import DatenbankServer
 from app.services.monitoring import monitoring_status
-from flet import use_state  # pyright: ignore[reportUnknownVariableType]
 from app.types.flet_types import State
+from flet import use_state  # pyright: ignore[reportUnknownVariableType]
+
 
 @ft.component
 def server_dashboard() -> ft.Column:
@@ -14,7 +16,7 @@ def server_dashboard() -> ft.Column:
     )
 
     def status_neu_laden(_e: ft.Event[ft.Button]) -> None:
-        set_infrastruktur(get_infrastruktur())s
+        set_infrastruktur(get_infrastruktur())
 
     meldung, hat_warnung = monitoring_status(infrastruktur)
 
