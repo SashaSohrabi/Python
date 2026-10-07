@@ -21,9 +21,9 @@ build/
 dist/
 *.egg-info/
 
-# Generated SQLite register and its journal/WAL files
-/Tag_15_SQLite/register.db
-/Tag_15_SQLite/register.db-*
+# SQLite databases and their journal/WAL files in any directory
+*.db
+*.db-*
 
 # Environment variables and secrets
 .env
