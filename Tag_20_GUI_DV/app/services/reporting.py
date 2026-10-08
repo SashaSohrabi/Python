@@ -1,8 +1,8 @@
 # pyright: strict
 from collections.abc import Sequence
 
-from ..types.ticket_types import Ticket
-from .ticket_register import TicketRegister
+from ..models.ticket_register import TicketRegister
+from ..types.types import Ticket
 
 
 def format_ticket(ticket: Ticket) -> str:

@@ -3,16 +3,16 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from ..constants.ticket_status import FILTER_ALL, STATUS_COMPLETED, STATUS_OPEN
+from ..constants.constants import FILTER_ALL, STATUS_COMPLETED, STATUS_OPEN
 from ..data.database import open_database_connection
-from ..models.validation import (
+from ..services.validation import (
     ticket_from_row,
     validate_filter,
     validate_priority,
     validate_status,
     validate_title,
 )
-from ..types.ticket_types import Ticket, TicketFilter, TicketStatus
+from ..types.types import Ticket, TicketFilter, TicketStatus
 
 
 class TicketRegister:
@@ -35,12 +35,12 @@ class TicketRegister:
         return [ticket_from_row(row) for row in rows]
 
     def create_ticket(self, title: str, priority: int) -> int:
-        cleaned = validate_title(title)
-        priority = validate_priority(priority)
+        validated_trimmed_title = validate_title(title)
+        validated_priority = validate_priority(priority)
         with closing(open_database_connection(self.db_path)) as connection:
             cursor = connection.execute(
                 "INSERT INTO tickets (title, status, priority) VALUES (?, ?, ?)",
-                (cleaned, STATUS_OPEN, priority),
+                (validated_trimmed_title, STATUS_OPEN, validated_priority),
             )
             new_id = cursor.lastrowid
             if new_id is None:

@@ -1,9 +1,14 @@
 # pyright: strict
 import sqlite3
 
-from ..constants.settings import MAX_PRIORITY, MIN_PRIORITY
-from ..constants.ticket_status import FILTER_ALL, STATUS_COMPLETED, STATUS_OPEN
-from ..types.ticket_types import Ticket, TicketFilter, TicketStatus
+from ..constants.constants import (
+    FILTER_ALL,
+    MAX_PRIORITY,
+    MIN_PRIORITY,
+    STATUS_COMPLETED,
+    STATUS_OPEN,
+)
+from ..types.types import Ticket, TicketFilter, TicketStatus
 
 
 def validate_title(title: str) -> str:

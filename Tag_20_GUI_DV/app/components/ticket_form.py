@@ -3,42 +3,44 @@ from collections.abc import Callable
 
 import flet as ft
 
-from ..models.validation import parse_priority, validate_title
-from ..state import State
-from ..types.flet_types import use_state
+from ..services.validation import parse_priority, validate_title
+from ..types.types import StateSetter, TicketFormState, use_state
 
 
-@ft.component
-def TicketForm(
+def empty_form(priority: str = "2") -> TicketFormState:
+    return {
+        "title": "",
+        "priority": priority,
+        "title_error": None,
+        "priority_error": None,
+        "save_error": None,
+    }
+
+
+def form_handlers(
+    form: TicketFormState,
+    set_form: StateSetter[TicketFormState],
     on_create: Callable[[str, int], str | None],
-    state: State,
     on_feedback: Callable[[str, bool], None],
-) -> ft.Column:
-    form, set_form = use_state(state.create_ticket_form_state)
-
+) -> tuple[
+    Callable[[ft.Event[ft.TextField]], None],
+    Callable[[ft.Event[ft.Dropdown]], None],
+    Callable[[], None],
+]:
     def change_title(event: ft.Event[ft.TextField]) -> None:
+        nonlocal form
         value = event.control.value or ""
-        set_form(
-            lambda previous: {
-                **previous,
-                "title": value,
-                "title_error": None,
-                "save_error": None,
-            }
-        )
+        form = {**form, "title": value, "title_error": None, "save_error": None}
+        set_form(form)
 
     def change_priority(event: ft.Event[ft.Dropdown]) -> None:
+        nonlocal form
         value = event.control.value or ""
-        set_form(
-            lambda previous: {
-                **previous,
-                "priority": value,
-                "priority_error": None,
-                "save_error": None,
-            }
-        )
+        form = {**form, "priority": value, "priority_error": None, "save_error": None}
+        set_form(form)
 
     def submit_ticket() -> None:
+        nonlocal form
         title_error: str | None = None
         priority_error: str | None = None
         title = ""
@@ -54,14 +56,13 @@ def TicketForm(
             priority_error = str(error)
 
         if title_error is not None or priority_error is not None:
-            set_form(
-                {
-                    **form,
-                    "title_error": title_error,
-                    "priority_error": priority_error,
-                    "save_error": None,
-                }
-            )
+            form = {
+                **form,
+                "title_error": title_error,
+                "priority_error": priority_error,
+                "save_error": None,
+            }
+            set_form(form)
             on_feedback(
                 title_error or priority_error or "Please check the form.", False
             )
@@ -69,11 +70,26 @@ def TicketForm(
         save_error = on_create(title, priority)
 
         if save_error is not None:
-            set_form({**form, "save_error": save_error})
+            form = {**form, "save_error": save_error}
+            set_form(form)
             on_feedback(save_error, False)
             return
         # Clear the title only after a successful commit; preserve the priority.
-        set_form(state.create_ticket_form_state(priority=form["priority"]))
+        form = empty_form(priority=form["priority"])
+        set_form(form)
+
+    return change_title, change_priority, submit_ticket
+
+
+@ft.component
+def TicketForm(
+    on_create: Callable[[str, int], str | None],
+    on_feedback: Callable[[str, bool], None],
+) -> ft.Column:
+    form, set_form = use_state(empty_form)
+    change_title, change_priority, submit_ticket = form_handlers(
+        form, set_form, on_create, on_feedback
+    )
 
     return ft.Column(
         spacing=12,

@@ -3,15 +3,16 @@ from collections.abc import Callable
 
 import flet as ft
 
-from ..constants.ticket_status import STATUS_COMPLETED
-from ..types.ticket_types import TicketStatus
+from ..constants.constants import STATUS_COMPLETED
+from ..types.types import TicketStatus
 
 
-def build_ticket_status_icon(
+@ft.component
+def TicketStatusIcon(
     status: TicketStatus,
     on_toggle: Callable[[], None],
     *,
-    key: str,
+    button_key: str,
 ) -> ft.Container:
     completed = status == STATUS_COMPLETED
     label = status.capitalize()
@@ -23,11 +24,11 @@ def build_ticket_status_icon(
         border_radius=12,
         bgcolor=ft.Colors.GREEN_50 if completed else ft.Colors.AMBER_50,
         content=ft.IconButton(
-            key=key,
+            key=button_key,
             width=40,
             height=40,
             padding=0,
-            tooltip=f"{label}: {action}",
+            tooltip=f"{label}: Click to {action}",
             on_click=on_toggle,
             icon=ft.Icon(
                 ft.Icons.CHECK_CIRCLE if completed else ft.Icons.PENDING_ACTIONS,

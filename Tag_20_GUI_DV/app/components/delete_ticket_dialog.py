@@ -3,36 +3,25 @@ from collections.abc import Callable
 
 import flet as ft
 
-from ..types.state_types import DeleteTicketState
+from ..types.types import Ticket
 
 
-def build_delete_dialog(
-    state: DeleteTicketState,
+@ft.component
+def DeleteTicketDialog(
+    ticket: Ticket | None,
     on_confirm: Callable[[], None],
     on_cancel: Callable[[], None],
-    error_text: ft.Text | None = None,
-) -> ft.AlertDialog | None:
-    ticket = state["ticket"]
-    if ticket is None:
-        return None
+) -> ft.AlertDialog:
     return ft.AlertDialog(
+        open=ticket is not None,
         modal=True,
-        title=ft.Text(f"Delete ticket {ticket['id']}?"),
+        title=ft.Text(f"Delete ticket {ticket['id']}?" if ticket else "Delete ticket?"),
         content=ft.Column(
             tight=True,
             spacing=12,
             controls=[
-                ft.Text(ticket["title"], weight=ft.FontWeight.W_600),
+                ft.Text(ticket["title"] if ticket else "", weight=ft.FontWeight.W_600),
                 ft.Text("This permanently removes the ticket from the database."),
-                (
-                    error_text
-                    if error_text is not None
-                    else ft.Text(
-                        state["error"] or "",
-                        color=ft.Colors.ERROR,
-                        visible=state["error"] is not None,
-                    )
-                ),
             ],
         ),
         actions=[
@@ -43,4 +32,5 @@ def build_delete_dialog(
                 on_click=on_confirm,
             ),
         ],
+        on_dismiss=on_cancel,
     )

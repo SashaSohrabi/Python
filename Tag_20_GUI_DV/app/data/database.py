@@ -2,7 +2,7 @@
 import sqlite3
 from pathlib import Path
 
-from ..constants.ticket_status import STATUS_COMPLETED, STATUS_OPEN
+from ..constants.constants import STATUS_COMPLETED, STATUS_OPEN
 from .infrastructure import SAMPLE_TICKETS
 
 

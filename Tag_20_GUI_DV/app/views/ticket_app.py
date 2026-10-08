@@ -1,35 +1,35 @@
 # pyright: strict
 import sqlite3
+from typing import cast
 
 import flet as ft
 
-from ..components.delete_ticket_dialog import build_delete_dialog
-from ..components.ticket_detail_dialog import build_detail_dialog
+from ..components.app_header import AppHeader
+from ..components.delete_ticket_dialog import DeleteTicketDialog
+from ..components.ticket_detail_dialog import TicketDetailDialog
 from ..components.ticket_form import TicketForm
 from ..components.ticket_list import TicketList
-from ..constants.settings import APP_TITLE, PAGE_PADDING
-from ..constants.ticket_status import FILTER_ALL, STATUS_COMPLETED, STATUS_OPEN
-from ..models.validation import validate_filter
-from ..services.ticket_register import TicketRegister
-from ..state import State
-from ..types.flet_types import use_state
-from ..types.state_types import TicketListState
-from ..types.ticket_types import Ticket, TicketFilter
+from ..components.ticket_toolbar import TicketToolbar
+from ..constants.constants import APP_TITLE, FILTER_ALL, PAGE_PADDING
+from ..models.ticket_register import TicketRegister
+from ..services.validation import validate_filter
+from ..types.types import Ticket, TicketFilter, TicketListState, use_state
 
 
 @ft.component
 def TicketApp(register: TicketRegister, page: ft.Page) -> ft.Container:
-    state = State(register)
+    tickets_state: TicketListState = {
+        "tickets": [],
+        "status_filter": FILTER_ALL,
+        "revision": 0,
+        "error": None,
+    }
 
-    def reload_tickets(
-        previous: TicketListState | None = None,
-        message: str = "",
-        status_filter: TicketFilter | None = None,
-    ) -> TicketListState:
-        return state.load_ticket_state(previous, message, status_filter)
+    tickets_state, set_tickets_state = use_state(tickets_state)
 
-    # Start and every subsequent action go through reload_tickets.
-    tickets_state, set_tickets_state = use_state(reload_tickets)
+    detail_ticket, set_detail_ticket = use_state(cast(Ticket | None, None))
+
+    delete_ticket, set_delete_ticket = use_state(cast(Ticket | None, None))
 
     def feedback(text: str, ok: bool = True) -> None:
         page.show_dialog(
@@ -39,18 +39,46 @@ def TicketApp(register: TicketRegister, page: ft.Page) -> ft.Container:
             )
         )
 
+    def close_detail_dialog() -> None:
+        nonlocal detail_ticket
+        detail_ticket = None
+        set_detail_ticket(None)
+
+    def close_delete_dialog() -> None:
+        nonlocal delete_ticket
+        delete_ticket = None
+        set_delete_ticket(None)
+
     def refresh(
         message: str = "",
         status_filter: TicketFilter | None = None,
         ok: bool = True,
     ) -> None:
-        loaded = reload_tickets(tickets_state, message, status_filter)
-        set_tickets_state(loaded)
-        if loaded["error"] is not None:
-            feedback(loaded["error"], False)
+        nonlocal tickets_state
+        selected_filter = status_filter or tickets_state["status_filter"]
+        next_state: TicketListState = {
+            **tickets_state,
+            "revision": tickets_state["revision"] + 1,
+            "error": None,
+        }
+        try:
+            next_state["tickets"] = register.get_filtered_tickets(selected_filter)
+            next_state["status_filter"] = selected_filter
+        except (sqlite3.Error, TypeError, ValueError) as load_error:
+            next_state["error"] = f"Could not load tickets: {load_error}"
+
+        # Keep callbacks in sync even if another action runs before a render.
+        tickets_state = next_state
+        set_tickets_state(tickets_state)
+        error = tickets_state["error"]
+        if error is not None:
+            feedback(error, ok=False)
         elif message:
             feedback(message, ok)
 
+    ft.on_mounted(refresh)
+
+    # Ticket actions used by the toolbar, form, list, and dialogs.
     def reload() -> None:
         refresh("Tickets reloaded from the database.")
 
@@ -58,7 +86,7 @@ def TicketApp(register: TicketRegister, page: ft.Page) -> ft.Container:
         try:
             selected = validate_filter(event.control.value or FILTER_ALL)
         except ValueError as error:
-            feedback(str(error), False)
+            feedback(str(error), ok=False)
             return
         refresh(status_filter=selected)
 
@@ -70,42 +98,11 @@ def TicketApp(register: TicketRegister, page: ft.Page) -> ft.Container:
         refresh(f"Ticket {new_id} saved.")
         return None
 
-    def close_dialog() -> None:
-        page.pop_dialog()
-
-    def request_delete(ticket: Ticket) -> None:
-        error_text = ft.Text("", color=ft.Colors.ERROR, visible=False)
-
-        def confirm_delete() -> None:
-            try:
-                deleted = register.delete_ticket(ticket["id"])
-            except (sqlite3.Error, ValueError) as error:
-                error_text.value = f"Could not delete ticket: {error}"
-                error_text.visible = True
-                error_text.update()
-                return
-            close_dialog()
-            message = (
-                f"Ticket {ticket['id']} deleted."
-                if deleted
-                else f"Ticket {ticket['id']} has already been deleted."
-            )
-            refresh(message, ok=deleted)
-
-        dialog = build_delete_dialog(
-            state.create_delete_ticket_state(ticket),
-            confirm_delete,
-            close_dialog,
-            error_text,
-        )
-        if dialog is not None:
-            page.show_dialog(dialog)
-
     def toggle_ticket_status(ticket: Ticket) -> None:
         try:
             updated = register.toggle_ticket_status(ticket["id"])
         except (sqlite3.Error, ValueError) as error:
-            feedback(f"Could not update ticket status: {error}", False)
+            feedback(f"Could not update ticket status: {error}", ok=False)
             return
         message = (
             f"Ticket {ticket['id']} status updated."
@@ -114,90 +111,105 @@ def TicketApp(register: TicketRegister, page: ft.Page) -> ft.Container:
         )
         refresh(message, ok=updated)
 
-    def open_ticket(ticket: Ticket) -> None:
-        error_text = ft.Text("", color=ft.Colors.ERROR, visible=False)
+    def request_delete(ticket: Ticket) -> None:
+        nonlocal delete_ticket
+        delete_ticket = ticket
+        set_delete_ticket(ticket)
 
-        def toggle_status() -> None:
-            try:
-                updated = register.toggle_ticket_status(ticket["id"])
-            except (sqlite3.Error, ValueError) as error:
-                error_text.value = f"Could not update ticket status: {error}"
-                error_text.visible = True
-                error_text.update()
-                return
-            close_dialog()
-            message = (
-                f"Ticket {ticket['id']} status updated."
-                if updated
-                else f"Ticket {ticket['id']} has already been deleted."
-            )
-            refresh(message, ok=updated)
-
-        def delete_from_details() -> None:
-            close_dialog()
-            request_delete(ticket)
-
-        page.show_dialog(
-            build_detail_dialog(
-                ticket, toggle_status, delete_from_details, close_dialog, error_text
-            )
+    def confirm_delete() -> None:
+        ticket = delete_ticket
+        if ticket is None:
+            return
+        close_delete_dialog()
+        try:
+            deleted = register.delete_ticket(ticket["id"])
+        except (sqlite3.Error, ValueError) as error:
+            feedback(f"Could not delete ticket: {error}", ok=False)
+            return
+        message = (
+            f"Ticket {ticket['id']} deleted."
+            if deleted
+            else f"Ticket {ticket['id']} has already been deleted."
         )
+        refresh(message, ok=deleted)
 
+    def open_ticket(ticket: Ticket) -> None:
+        nonlocal detail_ticket
+        detail_ticket = ticket
+        set_detail_ticket(ticket)
+
+    def toggle_from_details() -> None:
+        ticket = detail_ticket
+        if ticket is None:
+            return
+        close_detail_dialog()
+        toggle_ticket_status(ticket)
+
+    def delete_from_details() -> None:
+        ticket = detail_ticket
+        if ticket is None:
+            return
+        close_detail_dialog()
+        request_delete(ticket)
+
+    tickets = tickets_state["tickets"]
     current_filter = tickets_state["status_filter"]
+    error = tickets_state["error"]
     return ft.Container(
         padding=PAGE_PADDING,
         expand=True,
-        content=ft.Column(
-            scroll=ft.ScrollMode.AUTO,
-            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-            spacing=16,
+        content=ft.Stack(
+            fit=ft.StackFit.EXPAND,
             controls=[
-                ft.Container(
-                    bgcolor=ft.Colors.INDIGO_900,
-                    padding=20,
-                    border_radius=8,
-                    content=ft.Text(
-                        APP_TITLE,
-                        size=28,
-                        weight=ft.FontWeight.BOLD,
-                        color=ft.Colors.WHITE,
-                    ),
-                ),
-                TicketForm(create_ticket, state, feedback),
-                ft.Divider(),
-                ft.Row(
-                    wrap=True,
+                ft.Column(
+                    scroll=ft.ScrollMode.AUTO,
+                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+                    spacing=16,
                     controls=[
-                        ft.Button("Reload", icon=ft.Icons.REFRESH, on_click=reload),
-                        ft.Dropdown(
-                            key="ticket-filter",
-                            label="Status",
-                            width=180,
-                            value=current_filter,
-                            options=[
-                                ft.DropdownOption(FILTER_ALL, text="All"),
-                                ft.DropdownOption(STATUS_OPEN, text="Open"),
-                                ft.DropdownOption(STATUS_COMPLETED, text="Completed"),
-                            ],
-                            on_select=change_filter,
+                        AppHeader(),
+                        TicketForm(on_create=create_ticket, on_feedback=feedback),
+                        ft.Divider(),
+                        TicketToolbar(
+                            status_filter=current_filter,
+                            on_reload=reload,
+                            on_filter=change_filter,
+                        ),
+                        ft.Text(
+                            "*Click the status icon to toggle a ticket between "
+                            "Open and Completed.",
+                            key="ticket-status-hint",
+                            italic=True,
+                            size=14,
+                            color=ft.Colors.BLUE_GREY_700,
+                        ),
+                        ft.Text(
+                            f"{len(tickets)} tickets · Filter: {current_filter}",
+                            key="ticket-count",
+                        ),
+                        ft.Text(
+                            error or "",
+                            color=ft.Colors.ERROR,
+                            visible=error is not None,
+                        ),
+                        TicketList(
+                            tickets=tickets,
+                            on_open=open_ticket,
+                            status_filter=current_filter,
+                            on_delete=request_delete,
+                            on_toggle_status=toggle_ticket_status,
                         ),
                     ],
                 ),
-                ft.Text(
-                    f"{len(tickets_state['tickets'])} tickets · Filter: {current_filter}",
-                    key="ticket-count",
+                TicketDetailDialog(
+                    ticket=detail_ticket,
+                    on_toggle=toggle_from_details,
+                    on_delete=delete_from_details,
+                    on_close=close_detail_dialog,
                 ),
-                ft.Text(
-                    tickets_state["error"] or "",
-                    color=ft.Colors.ERROR,
-                    visible=tickets_state["error"] is not None,
-                ),
-                TicketList(
-                    tickets_state["tickets"],
-                    open_ticket,
-                    current_filter,
-                    request_delete,
-                    toggle_ticket_status,
+                DeleteTicketDialog(
+                    ticket=delete_ticket,
+                    on_confirm=confirm_delete,
+                    on_cancel=close_delete_dialog,
                 ),
             ],
         ),

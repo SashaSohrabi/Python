@@ -1,8 +1,8 @@
 # pyright: strict
 from typing import Final
 
-from ..constants.ticket_status import STATUS_COMPLETED, STATUS_OPEN
-from ..types.ticket_types import TicketSeed
+from ..constants.constants import STATUS_COMPLETED, STATUS_OPEN
+from ..types.types import TicketSeed
 
 SAMPLE_TICKETS: Final[tuple[TicketSeed, ...]] = (
     ("Printer on the 2nd floor is jammed", STATUS_OPEN, 2),
