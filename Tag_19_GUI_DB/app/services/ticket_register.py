@@ -5,22 +5,20 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from ..constants.settings import TICKET_ORDER
 from ..constants.ticket_status import STATUS_COMPLETED, STATUS_OPEN
 from ..data.database import open_database_connection
 from ..models.validation import ticket_from_row, validate_priority, validate_title
-from ..types.ticket_types import Ticket, TicketOrder
+from ..types.ticket_types import Ticket
 
 
 class TicketRegister:
-    def __init__(self, db_path: Path, order: TicketOrder = TICKET_ORDER) -> None:
+    def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
-        self.order = order
 
     def get_all_tickets(self) -> list[Ticket]:
         with closing(open_database_connection(self.db_path)) as connection:
             rows: list[sqlite3.Row] = connection.execute(
-                f"SELECT id, title, status, priority FROM tickets ORDER BY {self.order}"
+                "SELECT id, title, status, priority FROM tickets ORDER BY id"
             ).fetchall()
         return [ticket_from_row(row) for row in rows]
 
