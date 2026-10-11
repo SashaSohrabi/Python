@@ -61,7 +61,7 @@ def main() -> None:
 
     soup = BeautifulSoup(res.text, "html.parser")
     links: ResultSet[Tag] = soup.select(".titleline > a")
-    pprint(create_custom_hn(links, min_points=3))
+    pprint(create_custom_hn(links, min_points=10))
 
 
 if __name__ == "__main__":
