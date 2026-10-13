@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <link
+      rel="shortcut icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+    />
+    <script src="/static/script.js" async></script>
+    <title>Home Page</title>
+  </head>
+  <body>
+    <h1>Hello {{ username }}</h1>
+    <p>Welcome to the home page of our {{ app_name }}!</p>
+    {% if post_id %}
+    <p>Post ID: {{ post_id }}</p>
+    {% endif %}
+  </body>
+</html>
