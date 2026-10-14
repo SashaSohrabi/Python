@@ -51,10 +51,15 @@ def about(page_name: str) -> str:
 @app.route("/submit_form", methods=["GET", "POST"])
 def submit_form() -> ResponseReturnValue:
     if request.method == "POST":
-        data = request.form.to_dict()
-        form_submission_path.mkdir(parents=True, exist_ok=True)
-        # write_to_file(data)
-        write_to_csv(data)
-        return redirect("thankyou", code=303)
+        try:
+            data = request.form.to_dict()
+            form_submission_path.mkdir(parents=True, exist_ok=True)
+            # write_to_file(data)
+            write_to_csv(data)
+            return redirect("thankyou", code=303)
+
+        except (KeyError, OSError, csv.Error):
+            app.logger.exception("Failed to save form submission")
+            return "Could not save your message. Please try again!", 500
     else:
         return "Something went wrong. Please try again!"
